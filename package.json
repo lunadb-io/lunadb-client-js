@@ -8,5 +8,10 @@
   },
   "scripts": {
     "test": "jest"
+  },
+  "dependenciesMeta": {
+    "prettier@3.2.5": {
+      "unplugged": true
+    }
   }
 }
