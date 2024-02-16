@@ -1,4 +1,5 @@
 {
-  "name": "sample-lunadb-app",
-  "packageManager": "yarn@4.1.0"
+  "name": "lunadb-client-js",
+  "packageManager": "yarn@4.1.0",
+  "main": "index.js"
 }

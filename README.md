@@ -1,1 +1,1 @@
-# sample-lunadb-app
+# LunaDB Javascript Client
