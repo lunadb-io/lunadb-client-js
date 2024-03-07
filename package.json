@@ -1,12 +1,15 @@
 {
   "name": "@lunadb-io/lunadb-client-js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "packageManager": "yarn@4.1.0",
   "type": "module",
   "main": "./dist/index.js",
   "exports": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**"
+  ],
   "devDependencies": {
     "nock": "^14.0.0-beta.2",
     "tsup": "^8.0.2",
