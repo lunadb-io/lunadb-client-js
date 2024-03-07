@@ -1,9 +1,10 @@
 {
   "name": "@lunadb-io/lunadb-client-js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "packageManager": "yarn@4.1.0",
   "type": "module",
+  "main": "./dist/index.js",
   "exports": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
