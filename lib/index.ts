@@ -1,6 +1,8 @@
 import LunaDBAPIClient from "./client";
 import LunaDBDocument, { DocumentTransaction } from "./document";
 
+export { LunaDBDocument, DocumentTransaction };
+
 export interface DocumentAPIClientBridge {
   createDocument(documentId: string): Promise<void>;
   deleteDocument(documentId: string): Promise<void>;
@@ -44,14 +46,14 @@ export default class LunaDBAPIClientBridge implements DocumentAPIClientBridge {
   ): Promise<DocumentTransaction> {
     let resp = await this.client.v0betaSyncDocument(
       document.documentId,
-      document.lastSynced,
+      transaction.baseTimestamp,
       transaction.changes
     );
 
     if (resp.isSuccess()) {
-      document.applyDelta(resp.content.changes);
-      document.lastSynced = resp.content.hlc;
-      return new DocumentTransaction(resp.content.changes);
+      let txn = new DocumentTransaction(resp.content.hlc, resp.content.changes);
+      document.applyTransaction(txn);
+      return txn;
     } else {
       throw new Error("Failed to sync document");
     }

@@ -14,10 +14,15 @@ export default class LunaDBDocument {
     this.lastSynced = lastSynced;
   }
 
-  applyDelta(delta: Delta) {
-    delta.forEach((op) => {
+  applyTransaction(txn: DocumentTransaction) {
+    this.lastSynced = txn.baseTimestamp;
+    txn.changes.forEach((op) => {
       this.applyOp(op);
     });
+  }
+
+  newTransaction() {
+    return new DocumentTransaction(this.lastSynced, []);
   }
 
   applyOp(operation: DeltaOperation) {
@@ -83,9 +88,11 @@ export default class LunaDBDocument {
 }
 
 export class DocumentTransaction {
+  baseTimestamp: string;
   changes: Delta;
 
-  constructor(changes: Delta) {
+  constructor(baseTimestamp: string, changes: Delta) {
+    this.baseTimestamp = baseTimestamp;
     this.changes = changes;
   }
 
