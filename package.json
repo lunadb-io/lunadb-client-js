@@ -1,8 +1,10 @@
 {
-  "name": "lunadb-client-js",
+  "name": "@lunadb-io/lunadb-client-js",
+  "version": "0.0.1",
   "packageManager": "yarn@4.1.0",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "type": "module",
+  "module": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
   "devDependencies": {
     "nock": "^14.0.0-beta.2",
     "tsup": "^8.0.2",
