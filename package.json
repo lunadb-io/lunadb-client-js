@@ -11,7 +11,8 @@
   },
   "scripts": {
     "build": "tsup",
-    "test": "vitest"
+    "test": "vitest",
+    "prepare": "tsup"
   },
   "dependenciesMeta": {
     "prettier@3.2.5": {
