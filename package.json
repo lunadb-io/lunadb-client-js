@@ -1,7 +1,8 @@
 {
   "name": "lunadb-client-js",
   "packageManager": "yarn@4.1.0",
-  "main": "./lib/index.js",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
   "type": "module",
   "devDependencies": {
     "nock": "^14.0.0-beta.2",
