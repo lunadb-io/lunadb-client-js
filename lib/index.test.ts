@@ -32,6 +32,7 @@ test("load document", async () => {
   const doc = await client.loadDocument("test");
   expect(doc.lastSynced).toEqual("1234");
   expect(doc.baseContent).toEqual({ hello: "world" });
+  expect(doc.get("/hello")).toEqual("world");
 });
 
 test("sync document", async () => {
@@ -44,7 +45,7 @@ test("sync document", async () => {
       changes: [{ op: "insert", pointer: "/a", content: "hello!" }],
     });
   let doc = new LunaDBDocument("test", {}, "0");
-  const resolved = await client.syncDocument(doc, new DocumentTransaction([]));
+  const resolved = await client.syncDocument(doc, doc.newTransaction());
   expect(doc.lastSynced).toEqual("1234");
   expect(doc.baseContent).toEqual({ a: "hello!" });
   expect(resolved.changes).toEqual([

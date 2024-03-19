@@ -25,6 +25,10 @@ export default class LunaDBDocument {
     return new DocumentTransaction(this.lastSynced, []);
   }
 
+  get(pointer: string) {
+    return JsonPointer.get(this.baseContent, pointer);
+  }
+
   applyOp(operation: DeltaOperation) {
     switch (operation.op) {
       case "insert":
