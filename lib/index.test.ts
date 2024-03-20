@@ -52,3 +52,11 @@ test("sync document", async () => {
     { op: "insert", pointer: "/a", content: "hello!" },
   ]);
 });
+
+test("applyTransaction", async () => {
+  let doc = new LunaDBDocument("test", { textDoc: "asdf" }, "0");
+  let txn = doc.newTransaction();
+  txn.stringInsert("/textDoc", 4, "z");
+  doc.applyTransaction(txn);
+  expect(doc.baseContent).toEqual({ textDoc: "asdfz" });
+});
