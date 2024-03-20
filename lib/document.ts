@@ -70,6 +70,7 @@ export default class LunaDBDocument {
               strins.slice(0, operation.idx) +
               operation.content +
               strins.slice(operation.idx);
+            JsonPointer.set(this.baseContent, operation.pointer, strins);
           }
         } catch (e) {}
         break;
@@ -80,6 +81,7 @@ export default class LunaDBDocument {
             strrem =
               strrem.slice(0, operation.idx) +
               strrem.slice(operation.idx + operation.len);
+            JsonPointer.set(this.baseContent, operation.pointer, strrem);
           }
         } catch (e) {}
         break;
