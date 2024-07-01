@@ -54,7 +54,12 @@ export async function getDocumentContent(
 export async function syncDocument(
   domain: string,
   key: string,
-  delta: Delta,
+  baseTimestamp?: string,
+  delta?: Delta,
+  sessionId?: string,
+  sessionMetadata?: any,
+  fetchAllPresenceData?: boolean,
+  fetchNoPresenceData?: boolean,
   options?: RequestOptions
 ) {
   let url: string;
@@ -64,5 +69,17 @@ export async function syncDocument(
     throw new HTTPError(-1, domain, "Invalid domain");
   }
   const req = new LunaDBRequest(url, "patch", options);
-  return await req.execute(delta, true);
+  return await req.execute(
+    {
+      hlc: baseTimestamp,
+      changes: delta,
+      presence: {
+        id: sessionId,
+        metadata: sessionMetadata,
+      },
+      fetch_all_presence_data: fetchAllPresenceData,
+      exclude_presence: fetchNoPresenceData,
+    },
+    true
+  );
 }
