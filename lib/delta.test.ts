@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  DeleteOperation,
   IncrementOperation,
   InsertOperation,
   StringInsertOperation,
@@ -62,6 +63,35 @@ test("concurrent array inserts with local as nested child", () => {
     pointer: "/arr/2/key",
     content: "foo",
   });
+});
+
+test("concurrent array removals", () => {
+  const obj = { arr: ["foo", "baz"] };
+  const local: DeleteOperation = {
+    op: "delete",
+    pointer: "/arr/1",
+  };
+  const remote: DeleteOperation = {
+    op: "delete",
+    pointer: "/arr/0",
+  };
+  expect(rebase(local, remote, obj)).toStrictEqual({
+    op: "delete",
+    pointer: "/arr/0",
+  });
+});
+
+test("concurrent array removals are idempotent", () => {
+  const obj = { arr: ["foo"] };
+  const local: DeleteOperation = {
+    op: "delete",
+    pointer: "/arr/0",
+  };
+  const remote: DeleteOperation = {
+    op: "delete",
+    pointer: "/arr/0",
+  };
+  expect(rebase(local, remote, obj)).toStrictEqual(null);
 });
 
 test("concurrent inserts discriminate between arrays and objects", () => {
@@ -168,7 +198,6 @@ test("concurrent text edits with index shift", () => {
   // concurrent removes are handled in separate test
 });
 
-// todo: arrays
 test("concurrent text removes are idempotent", () => {
   const obj = { s: "" };
   const samples = [

@@ -56,7 +56,7 @@ export function rebase(
   remoteOp: DeltaOperation,
   obj: Object
 ): DeltaOperation | null {
-  if (remoteOp.op === "insert") {
+  if (remoteOp.op === "insert" || remoteOp.op === "delete") {
     try {
       let remotePtrTokens: Array<string> = JsonPointer.parse(remoteOp.pointer);
       let parentArrayPtr = JsonPointer.compile(remotePtrTokens.slice(0, -1));
@@ -69,9 +69,17 @@ export function rebase(
         let remoteIdx = parseInt(remotePtrTokens[remotePtrTokens.length - 1]);
         let localIdx = parseInt(localPtrTokens[remotePtrTokens.length - 1]);
         if (!isNaN(remoteIdx) && !isNaN(localIdx) && remoteIdx <= localIdx) {
-          localPtrTokens[remotePtrTokens.length - 1] = (
-            localIdx + 1
-          ).toString();
+          if (remoteOp.op === "insert") {
+            localPtrTokens[remotePtrTokens.length - 1] = (
+              localIdx + 1
+            ).toString();
+          } else if (remoteOp.op === "delete" && remoteIdx != localIdx) {
+            localPtrTokens[remotePtrTokens.length - 1] = (
+              localIdx - 1
+            ).toString();
+          } else if (remoteOp.op === "delete" && remoteIdx === localIdx) {
+            return null;
+          }
           let ret = structuredClone(localOp);
           ret.pointer = "/" + localPtrTokens.join("/");
           return ret;
@@ -150,4 +158,57 @@ export function rebase(
   }
 
   return structuredClone(localOp);
+}
+
+export function applyOp(operation: DeltaOperation, obj: Object) {
+  switch (operation.op) {
+    case "insert":
+      try {
+        JsonPointer.set(this.baseContent, operation.pointer, operation.content);
+      } catch (e) {}
+      break;
+    case "delete":
+      try {
+        JsonPointer.delete(this.baseContent, operation.pointer);
+      } catch (e) {}
+      break;
+    case "replace":
+      try {
+        JsonPointer.set(this.baseContent, operation.pointer, operation.content);
+      } catch (e) {}
+      break;
+    case "incr":
+      try {
+        let num = JsonPointer.get(this.baseContent, operation.pointer);
+        if (typeof num === "number") {
+          num += operation.diff;
+        }
+      } catch (e) {}
+      break;
+    case "stringinsert":
+      try {
+        let strins = JsonPointer.get(this.baseContent, operation.pointer);
+        if (typeof strins === "string") {
+          strins =
+            strins.slice(0, operation.idx) +
+            operation.content +
+            strins.slice(operation.idx);
+          JsonPointer.set(this.baseContent, operation.pointer, strins);
+        }
+      } catch (e) {}
+      break;
+    case "stringremove":
+      try {
+        let strrem = JsonPointer.get(this.baseContent, operation.pointer);
+        if (typeof strrem === "string") {
+          strrem =
+            strrem.slice(0, operation.idx) +
+            strrem.slice(operation.idx + operation.len);
+          JsonPointer.set(this.baseContent, operation.pointer, strrem);
+        }
+      } catch (e) {}
+      break;
+    default:
+      throw new Error("Operation '" + operation + "' was unable to be applied");
+  }
 }
