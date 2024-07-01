@@ -202,26 +202,31 @@ test("concurrent text edits with index shift", () => {
 test("concurrent text removes are idempotent", () => {
   const obj = { s: "" };
   const samples = [
-    [[10, 5], null],
-    [[11, 3], null],
+    [[10, 5], [10, 5], null],
+    [[11, 3], [10, 5], null],
     [
       [9, 7],
-      [9, 1],
+      [10, 5],
+      [9, 2],
     ],
     [
       [5, 5],
+      [10, 5],
       [5, 5],
     ],
     [
       [15, 5],
       [10, 5],
+      [10, 5],
     ],
     [
       [8, 5],
+      [10, 5],
       [8, 2],
     ],
     [
       [13, 5],
+      [10, 5],
       [10, 3],
     ],
   ];
@@ -238,18 +243,20 @@ test("concurrent text removes are idempotent", () => {
     let remote: StringRemoveOperation = {
       op: "stringremove",
       pointer: "/s",
-      idx: 10,
-      len: 5,
+      // @ts-ignore
+      idx: sample[1][0],
+      // @ts-ignore
+      len: sample[1][1],
     };
 
-    if (sample[1]) {
+    if (sample[2]) {
       expect(rebase(local, remote, obj)).toStrictEqual({
         op: "stringremove",
         pointer: "/s",
         // @ts-ignore
-        idx: sample[1][0],
+        idx: sample[2][0],
         // @ts-ignore
-        len: sample[1][1],
+        len: sample[2][1],
       });
     } else {
       expect(rebase(local, remote, obj)).toStrictEqual(null);
