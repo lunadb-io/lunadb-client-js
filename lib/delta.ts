@@ -1,6 +1,14 @@
 // @ts-ignore
 import JsonPointer from "json-pointer";
-import { insert, parsePointer, set } from "./patch";
+import {
+  operationDelete,
+  operationIncrement,
+  operationInsert,
+  operationReplace,
+  operationStringInsert,
+  operationStringRemove,
+  parsePointer,
+} from "./patch";
 
 export interface InsertOperation {
   op: "insert";
@@ -165,50 +173,22 @@ export function applyOp(operation: DeltaOperation, obj: Object) {
   let ptr = parsePointer(operation.pointer);
   switch (operation.op) {
     case "insert":
-      insert(obj, ptr, operation.content);
+      operationInsert(obj, ptr, operation.content);
       break;
     case "delete":
-      try {
-        JsonPointer.remove(obj, operation.pointer);
-      } catch (e) {}
+      operationDelete(obj, ptr);
       break;
     case "replace":
-      try {
-        if (JsonPointer.has(obj, operation.pointer)) {
-          JsonPointer.set(obj, operation.pointer, operation.content);
-        }
-      } catch (e) {}
+      operationReplace(obj, ptr, operation.content);
       break;
     case "incr":
-      try {
-        let num = JsonPointer.get(obj, operation.pointer);
-        if (typeof num === "number") {
-          num += operation.diff;
-        }
-      } catch (e) {}
+      operationIncrement(obj, ptr, operation.diff);
       break;
     case "stringinsert":
-      try {
-        let strins = JsonPointer.get(obj, operation.pointer);
-        if (typeof strins === "string") {
-          strins =
-            strins.slice(0, operation.idx) +
-            operation.content +
-            strins.slice(operation.idx);
-          JsonPointer.set(obj, operation.pointer, strins);
-        }
-      } catch (e) {}
+      operationStringInsert(obj, ptr, operation.idx, operation.content);
       break;
     case "stringremove":
-      try {
-        let strrem = JsonPointer.get(obj, operation.pointer);
-        if (typeof strrem === "string") {
-          strrem =
-            strrem.slice(0, operation.idx) +
-            strrem.slice(operation.idx + operation.len);
-          JsonPointer.set(obj, operation.pointer, strrem);
-        }
-      } catch (e) {}
+      operationStringRemove(obj, ptr, operation.idx, operation.len);
       break;
     default:
       throw new Error("Operation '" + operation + "' was unable to be applied");
