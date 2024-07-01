@@ -16,11 +16,14 @@ export function parsePointer(ptr: string): Array<string> {
 }
 
 export function compilePointer(ptr: Array<string>): string {
-  return ptr
-    .map((s) => {
-      return s.replace("/", "~1").replace("~", "~0");
-    })
-    .join("/");
+  return (
+    "/" +
+    ptr
+      .map((s) => {
+        return s.replace("/", "~1").replace("~", "~0");
+      })
+      .join("/")
+  );
 }
 
 interface TraversalResult {
@@ -28,7 +31,7 @@ interface TraversalResult {
   parent: any;
 }
 
-function traverse(obj: any, ptr: Array<string>): TraversalResult | null {
+export function traverse(obj: any, ptr: Array<string>): TraversalResult | null {
   let next = ptr[0];
   for (let i = 0; i < ptr.length - 1; i++) {
     if (Array.isArray(obj)) {

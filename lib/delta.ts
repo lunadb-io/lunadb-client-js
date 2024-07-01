@@ -1,6 +1,5 @@
-// @ts-ignore
-import JsonPointer from "json-pointer";
 import {
+  compilePointer,
   operationDelete,
   operationIncrement,
   operationInsert,
@@ -8,6 +7,7 @@ import {
   operationStringInsert,
   operationStringRemove,
   parsePointer,
+  traverse,
 } from "./patch";
 
 export interface InsertOperation {
@@ -65,37 +65,33 @@ export function rebase(
   remoteOp: DeltaOperation,
   obj: Object
 ): DeltaOperation | null {
+  // The addition or removal of array elements will cause local operations to shift.
   if (remoteOp.op === "insert" || remoteOp.op === "delete") {
-    try {
-      let remotePtrTokens: Array<string> = JsonPointer.parse(remoteOp.pointer);
-      let parentArrayPtr = JsonPointer.compile(remotePtrTokens.slice(0, -1));
-      let val = JsonPointer.get(obj, parentArrayPtr);
-      if (
-        Array.isArray(val) &&
-        localOp.pointer.startsWith(parentArrayPtr + "/")
-      ) {
-        let localPtrTokens: Array<string> = JsonPointer.parse(localOp.pointer);
-        let remoteIdx = parseInt(remotePtrTokens[remotePtrTokens.length - 1]);
+    let remotePtrTokens = parsePointer(remoteOp.pointer);
+    let traversal = traverse(obj, remotePtrTokens);
+    if (traversal !== null && Array.isArray(traversal.parent)) {
+      let parentArrayPtr = compilePointer(remotePtrTokens.slice(0, -1));
+      if (localOp.pointer.startsWith(parentArrayPtr + "/")) {
+        let localPtrTokens = parsePointer(localOp.pointer);
         let localIdx = parseInt(localPtrTokens[remotePtrTokens.length - 1]);
-        if (!isNaN(remoteIdx) && !isNaN(localIdx) && remoteIdx <= localIdx) {
+        if (!isNaN(localIdx) && (traversal.leaf as number) <= localIdx) {
           if (remoteOp.op === "insert") {
             localPtrTokens[remotePtrTokens.length - 1] = (
               localIdx + 1
             ).toString();
-          } else if (remoteOp.op === "delete" && remoteIdx != localIdx) {
+          } else if (traversal.leaf != localIdx) {
             localPtrTokens[remotePtrTokens.length - 1] = (
               localIdx - 1
             ).toString();
-          } else if (remoteOp.op === "delete" && remoteIdx === localIdx) {
+          } else {
+            // Deletions are idempotent.
             return null;
           }
           let ret = structuredClone(localOp);
-          ret.pointer = "/" + localPtrTokens.join("/");
+          ret.pointer = compilePointer(localPtrTokens);
           return ret;
         }
       }
-    } catch (e) {
-      // no-op
     }
   }
 
@@ -109,6 +105,7 @@ export function rebase(
       return null;
     }
 
+    // Updates to string content will require positional corrections.
     if (
       (localOp.op === "stringinsert" || localOp.op === "stringremove") &&
       remoteOp.op === "stringinsert"
@@ -131,42 +128,41 @@ export function rebase(
       localOp.op === "stringremove" &&
       remoteOp.op === "stringremove"
     ) {
-      let ret = structuredClone(localOp);
       const localMax = localOp.idx + localOp.len - 1;
       const remoteMax = remoteOp.idx + remoteOp.len - 1;
-      // local range is to the left of remote range
-      if (localMax < remoteOp.idx) {
-        return ret;
-      }
       // local range is to the right of remote range
       if (localOp.idx > remoteMax) {
+        let ret = structuredClone(localOp);
         ret.idx -= remoteOp.len;
         return ret;
       }
       // local range is subset of remote range
-      if (localOp.idx >= remoteOp.idx && localMax <= remoteMax) {
+      else if (localOp.idx >= remoteOp.idx && localMax <= remoteMax) {
         return null;
       }
       // local range is a superset of remote range
-      if (localOp.idx <= remoteOp.idx && localMax >= remoteMax) {
+      else if (localOp.idx <= remoteOp.idx && localMax >= remoteMax) {
+        let ret = structuredClone(localOp);
         ret.len -= remoteOp.len;
+        return ret;
       }
       // local range overlaps the left of remote range
-      if (localOp.idx < remoteOp.idx && localMax >= remoteOp.idx) {
+      else if (localOp.idx < remoteOp.idx && localMax >= remoteOp.idx) {
+        let ret = structuredClone(localOp);
         ret.len = remoteOp.idx - ret.idx;
         return ret;
       }
       // local range overlaps the right of remote range
-      if (localOp.idx > remoteOp.idx && localMax > remoteMax) {
+      else if (localOp.idx > remoteOp.idx && localMax > remoteMax) {
+        let ret = structuredClone(localOp);
         ret.len = localMax - remoteMax;
         ret.idx -= localOp.idx - remoteOp.idx;
         return ret;
       }
-      return ret;
     }
   }
 
-  return structuredClone(localOp);
+  return localOp;
 }
 
 export function applyOp(operation: DeltaOperation, obj: Object) {
