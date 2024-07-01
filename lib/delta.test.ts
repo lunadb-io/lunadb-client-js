@@ -284,3 +284,53 @@ test("apply: array operations", () => {
   applyOp({ op: "insert", pointer: "/arr/2", content: "foo" }, obj);
   expect(obj).toStrictEqual({ arr: ["bar"] });
 });
+
+test("apply: increment", () => {
+  let obj: any = { num: 0, arr: [0] };
+  applyOp({ op: "incr", pointer: "/num", diff: 1 }, obj);
+  expect(obj).toStrictEqual({ num: 1, arr: [0] });
+  applyOp({ op: "incr", pointer: "/arr/0", diff: 1 }, obj);
+  expect(obj).toStrictEqual({ num: 1, arr: [1] });
+  applyOp({ op: "incr", pointer: "/num", diff: -2 }, obj);
+  expect(obj).toStrictEqual({ num: -1, arr: [1] });
+  applyOp({ op: "incr", pointer: "/arr/0", diff: -2 }, obj);
+  expect(obj).toStrictEqual({ num: -1, arr: [-1] });
+  applyOp({ op: "incr", pointer: "/arr/1", diff: -2 }, obj);
+  expect(obj).toStrictEqual({ num: -1, arr: [-1] });
+  applyOp({ op: "incr", pointer: "/dne", diff: -2 }, obj);
+  expect(obj).toStrictEqual({ num: -1, arr: [-1] });
+});
+
+test("apply: string ops", () => {
+  let obj = { s: "foobaz", arr: ["foobaz"] };
+  applyOp({ op: "stringinsert", pointer: "/s", idx: 3, content: "bar" }, obj);
+  expect(obj).toStrictEqual({ s: "foobarbaz", arr: ["foobaz"] });
+  applyOp(
+    { op: "stringinsert", pointer: "/arr/0", idx: 3, content: "bar" },
+    obj
+  );
+  expect(obj).toStrictEqual({ s: "foobarbaz", arr: ["foobarbaz"] });
+
+  applyOp({ op: "stringremove", pointer: "/s", idx: 3, len: 3 }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobarbaz"] });
+  applyOp({ op: "stringremove", pointer: "/arr/0", idx: 3, len: 3 }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+
+  applyOp({ op: "stringinsert", pointer: "/dne", idx: 0, content: "dne" }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+  applyOp({ op: "stringremove", pointer: "/dne", idx: 0, len: 1 }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+
+  applyOp({ op: "stringinsert", pointer: "/s", idx: 10, content: "bar" }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+  applyOp(
+    { op: "stringinsert", pointer: "/arr/0", idx: 10, content: "bar" },
+    obj
+  );
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+
+  applyOp({ op: "stringremove", pointer: "/s", idx: 10, len: 1 }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+  applyOp({ op: "stringremove", pointer: "/arr/0", idx: 10, len: 1 }, obj);
+  expect(obj).toStrictEqual({ s: "foobaz", arr: ["foobaz"] });
+});
