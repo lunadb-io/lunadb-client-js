@@ -5,6 +5,7 @@ import {
   InsertOperation,
   StringInsertOperation,
   StringRemoveOperation,
+  applyOp,
   rebase,
 } from "./delta";
 
@@ -254,4 +255,32 @@ test("concurrent text removes are idempotent", () => {
       expect(rebase(local, remote, obj)).toStrictEqual(null);
     }
   }
+});
+
+test("apply: map operations", () => {
+  let obj = { deleteMe: true };
+  applyOp({ op: "delete", pointer: "/deleteMe" }, obj);
+  expect(obj).toStrictEqual({});
+  applyOp({ op: "insert", pointer: "/insert", content: "foo" }, obj);
+  expect(obj).toStrictEqual({ insert: "foo" });
+  applyOp({ op: "replace", pointer: "/dne", content: "bar" }, obj);
+  expect(obj).toStrictEqual({ insert: "foo" });
+  applyOp({ op: "replace", pointer: "/insert", content: "bar" }, obj);
+  expect(obj).toStrictEqual({ insert: "bar" });
+});
+
+test("apply: array operations", () => {
+  let obj = { arr: ["deleteMe"] };
+  applyOp({ op: "delete", pointer: "/arr/0" }, obj);
+  expect(obj).toStrictEqual({ arr: [] });
+  applyOp({ op: "insert", pointer: "/arr/0", content: "foo" }, obj);
+  expect(obj).toStrictEqual({ arr: ["foo"] });
+  applyOp({ op: "replace", pointer: "/arr/1", content: "bar" }, obj);
+  expect(obj).toStrictEqual({ arr: ["foo"] });
+  applyOp({ op: "replace", pointer: "/arr/0", content: "bar" }, obj);
+  expect(obj).toStrictEqual({ arr: ["bar"] });
+
+  // shouldn't work
+  applyOp({ op: "insert", pointer: "/arr/2", content: "foo" }, obj);
+  expect(obj).toStrictEqual({ arr: ["bar"] });
 });
