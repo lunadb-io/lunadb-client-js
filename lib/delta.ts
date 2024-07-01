@@ -1,5 +1,6 @@
 // @ts-ignore
 import JsonPointer from "json-pointer";
+import { insert, parsePointer, set } from "./patch";
 
 export interface InsertOperation {
   op: "insert";
@@ -161,25 +162,26 @@ export function rebase(
 }
 
 export function applyOp(operation: DeltaOperation, obj: Object) {
+  let ptr = parsePointer(operation.pointer);
   switch (operation.op) {
     case "insert":
-      try {
-        JsonPointer.set(this.baseContent, operation.pointer, operation.content);
-      } catch (e) {}
+      insert(obj, ptr, operation.content);
       break;
     case "delete":
       try {
-        JsonPointer.delete(this.baseContent, operation.pointer);
+        JsonPointer.remove(obj, operation.pointer);
       } catch (e) {}
       break;
     case "replace":
       try {
-        JsonPointer.set(this.baseContent, operation.pointer, operation.content);
+        if (JsonPointer.has(obj, operation.pointer)) {
+          JsonPointer.set(obj, operation.pointer, operation.content);
+        }
       } catch (e) {}
       break;
     case "incr":
       try {
-        let num = JsonPointer.get(this.baseContent, operation.pointer);
+        let num = JsonPointer.get(obj, operation.pointer);
         if (typeof num === "number") {
           num += operation.diff;
         }
@@ -187,24 +189,24 @@ export function applyOp(operation: DeltaOperation, obj: Object) {
       break;
     case "stringinsert":
       try {
-        let strins = JsonPointer.get(this.baseContent, operation.pointer);
+        let strins = JsonPointer.get(obj, operation.pointer);
         if (typeof strins === "string") {
           strins =
             strins.slice(0, operation.idx) +
             operation.content +
             strins.slice(operation.idx);
-          JsonPointer.set(this.baseContent, operation.pointer, strins);
+          JsonPointer.set(obj, operation.pointer, strins);
         }
       } catch (e) {}
       break;
     case "stringremove":
       try {
-        let strrem = JsonPointer.get(this.baseContent, operation.pointer);
+        let strrem = JsonPointer.get(obj, operation.pointer);
         if (typeof strrem === "string") {
           strrem =
             strrem.slice(0, operation.idx) +
             strrem.slice(operation.idx + operation.len);
-          JsonPointer.set(this.baseContent, operation.pointer, strrem);
+          JsonPointer.set(obj, operation.pointer, strrem);
         }
       } catch (e) {}
       break;
