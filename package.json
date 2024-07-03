@@ -1,6 +1,6 @@
 {
   "name": "@lunadb-io/lunadb-client-js",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "license": "MIT",
   "homepage": "https://github.com/lunadb-io/lunadb-client-js",
   "packageManager": "yarn@4.1.0",
