@@ -1,38 +1,4 @@
-import { Delta, applyOp } from "./delta";
-import { parsePointer, traverse } from "./patch";
-
-export default class LunaDBDocument {
-  documentId: string;
-  baseContent: object;
-  lastSynced: string;
-
-  constructor(documentId: string, baseContent: object, lastSynced: string) {
-    this.documentId = documentId;
-    this.baseContent = baseContent;
-    this.lastSynced = lastSynced;
-  }
-
-  applyTransaction(txn: DocumentTransaction) {
-    this.lastSynced = txn.baseTimestamp;
-    txn.changes.forEach((op) => {
-      applyOp(op, this.baseContent);
-    });
-  }
-
-  newTransaction() {
-    return new DocumentTransaction(this.lastSynced, []);
-  }
-
-  get(pointer: string) {
-    const frags = parsePointer(pointer);
-    const results = traverse(this.baseContent, frags);
-    if (results === null) {
-      return undefined;
-    } else {
-      return results.parent[results.leaf];
-    }
-  }
-}
+import { Delta } from "./delta";
 
 export class DocumentTransaction {
   baseTimestamp: string;

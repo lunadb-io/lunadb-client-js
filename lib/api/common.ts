@@ -1,10 +1,3 @@
-// export class LunaDBHTTPClient {
-//   url: string;
-//   constructor(url: string) {
-//     this.url = url.replace(/\/$/, "");
-//   }
-// }
-
 export class HTTPResponse {
   status: number;
   content: any;
@@ -19,16 +12,22 @@ export class HTTPError {
   status: number;
   message: string | null;
   url: string;
+  method: string;
 
-  constructor(status: number, url: string, message: string | null = null) {
+  constructor(
+    status: number,
+    url: string,
+    method: string,
+    message: string | null = null
+  ) {
     this.status = status;
     this.url = url;
+    this.method = method;
     this.message = message;
   }
 }
 
 export interface RequestOptions {
-  contentType: string | undefined;
   basicAuth: string | undefined;
 }
 
@@ -41,10 +40,8 @@ export class LunaDBRequest {
     this.url = url;
     this.method = method;
     this.headers = new Headers();
+    this.headers.set("content-type", "application/json");
 
-    if (options?.contentType) {
-      this.headers.set("content-type", options.contentType);
-    }
     if (options?.basicAuth) {
       this.headers.set("authorization", "Basic " + options.basicAuth);
     }
@@ -64,25 +61,36 @@ export class LunaDBRequest {
     }
 
     let req = new Request(this.url, config);
+    let response;
     try {
-      const response = await fetch(req);
-
-      if (expectJson) {
-        try {
-          const body = await response.json();
-          return new HTTPResponse(response.status, body);
-        } catch (e) {
-          throw new HTTPError(
-            response.status,
-            this.url,
-            "Failed to parse body as JSON"
-          );
-        }
-      } else {
-        return new HTTPResponse(response.status, undefined);
-      }
+      response = await fetch(req);
     } catch (e) {
-      throw new HTTPError(0, this.url, e.toString());
+      throw new HTTPError(-1, this.url, this.method, e.message);
+    }
+
+    if (!response.ok) {
+      throw new HTTPError(
+        response.status,
+        this.url,
+        this.method,
+        response.statusText
+      );
+    }
+
+    if (expectJson) {
+      try {
+        const body = await response.json();
+        return new HTTPResponse(response.status, body);
+      } catch (e) {
+        throw new HTTPError(
+          response.status,
+          this.url,
+          this.method,
+          "Failed to parse body as JSON"
+        );
+      }
+    } else {
+      return new HTTPResponse(response.status, undefined);
     }
   }
 }
