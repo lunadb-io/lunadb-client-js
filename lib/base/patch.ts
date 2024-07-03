@@ -32,6 +32,10 @@ interface TraversalResult {
 }
 
 export function traverse(obj: any, ptr: Array<string>): TraversalResult | null {
+  if (ptr.length === 0) {
+    return null;
+  }
+
   let next = ptr[0];
   for (let i = 0; i < ptr.length - 1; i++) {
     if (Array.isArray(obj)) {
