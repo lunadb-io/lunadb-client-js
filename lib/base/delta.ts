@@ -77,7 +77,8 @@ export function rebase(
       // localOp operations on a subtree of the destructive operation.
       // Means that localOp gets invalidated.
       // TODO: Would love to make this "optional" when we add support
-      // for auto-creating subtrees that don't exist.
+      // for auto-creating subtrees that don't exist. Consider how this plays
+      // with the comment below about base document type checking.
       return null;
     }
   }
@@ -86,6 +87,12 @@ export function rebase(
   if (ARRAY_SHIFT_OPERATIONS.includes(remoteOp.op)) {
     let remotePtrTokens = parsePointer(remoteOp.pointer);
     let traversal = traverse(obj, remotePtrTokens);
+
+    // There is no need to update the base document to verify that the most up-to-date
+    // type of traversal.parent is an Array. This is because a creation or destruction
+    // of traversal.parent invalidates any operations on children that would otherwise
+    // require shifting.
+    // In short: we should never get this far if the array is overwritten.
     if (traversal !== null && Array.isArray(traversal.parent)) {
       let parentArrayPtr = compilePointer(remotePtrTokens.slice(0, -1));
       if (localOp.pointer.startsWith(parentArrayPtr + "/")) {
