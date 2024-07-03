@@ -3,6 +3,7 @@ import {
   DeleteOperation,
   IncrementOperation,
   InsertOperation,
+  ReplaceOperation,
   StringInsertOperation,
   StringRemoveOperation,
   applyOp,
@@ -150,6 +151,22 @@ test("local string ops are blown out by remote replacements", () => {
   };
   expect(rebase(localInsert, remote, obj)).toStrictEqual(null);
   expect(rebase(localRemove, remote, obj)).toStrictEqual(null);
+});
+
+test("local subtree ops are blown out by remote replacements", () => {
+  const obj = { s: { a: "" } };
+  const local: StringInsertOperation = {
+    op: "stringinsert",
+    pointer: "/s/a",
+    idx: 0,
+    content: "oh no!",
+  };
+  const remote: ReplaceOperation = {
+    op: "replace",
+    pointer: "/s",
+    content: { a: "oh yeah!" },
+  };
+  expect(rebase(local, remote, obj)).toStrictEqual(null);
 });
 
 test("concurrent text edits with index shift", () => {

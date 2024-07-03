@@ -58,15 +58,32 @@ export type DeltaOperation =
 export type Delta = Array<DeltaOperation>;
 
 const DESTRUCTIVE_OPERATIONS = ["insert", "delete", "replace"];
-const UPDATE_IN_PLACE_OPERATIONS = ["incr", "stringinsert", "stringremove"];
+const ARRAY_SHIFT_OPERATIONS = ["insert", "delete"];
+const IN_PLACE_OPERATIONS = ["incr", "stringinsert", "stringremove"];
+const STRING_OPERATIONS = ["stringinsert", "stringremove"];
 
 export function rebase(
   localOp: DeltaOperation,
   remoteOp: DeltaOperation,
   obj: Object
 ): DeltaOperation | null {
+  const equalPointer = localOp.pointer === remoteOp.pointer;
+
+  if (DESTRUCTIVE_OPERATIONS.includes(remoteOp.op)) {
+    if (equalPointer && IN_PLACE_OPERATIONS.includes(localOp.op)) {
+      // In-place operations are fully invalidated by a destructive operation.
+      return null;
+    } else if (localOp.pointer.startsWith(remoteOp.pointer + "/")) {
+      // localOp operations on a subtree of the destructive operation.
+      // Means that localOp gets invalidated.
+      // TODO: Would love to make this "optional" when we add support
+      // for auto-creating subtrees that don't exist.
+      return null;
+    }
+  }
+
   // The addition or removal of array elements will cause local operations to shift.
-  if (remoteOp.op === "insert" || remoteOp.op === "delete") {
+  if (ARRAY_SHIFT_OPERATIONS.includes(remoteOp.op)) {
     let remotePtrTokens = parsePointer(remoteOp.pointer);
     let traversal = traverse(obj, remotePtrTokens);
     if (traversal !== null && Array.isArray(traversal.parent)) {
@@ -95,16 +112,11 @@ export function rebase(
     }
   }
 
-  if (localOp.pointer === remoteOp.pointer) {
-    // If a remote update completely replaces the value a local operation
-    // updates, then the local operation might not make sense anymore.
-    // So when we rebase we tell the local update to get lost.
-    const remoteDestructive = DESTRUCTIVE_OPERATIONS.includes(remoteOp.op);
-    const localUpdates = UPDATE_IN_PLACE_OPERATIONS.includes(localOp.op);
-    if (localUpdates && remoteDestructive) {
-      return null;
-    }
-
+  if (
+    equalPointer &&
+    STRING_OPERATIONS.includes(remoteOp.op) &&
+    STRING_OPERATIONS.includes(localOp.op)
+  ) {
     // Updates to string content will require positional corrections.
     if (
       (localOp.op === "stringinsert" || localOp.op === "stringremove") &&
