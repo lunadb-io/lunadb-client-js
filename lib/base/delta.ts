@@ -139,10 +139,14 @@ export function rebase(
       remoteOp.op === "stringremove"
     ) {
       let ret = structuredClone(localOp);
-      if (remoteOp.idx <= ret.idx) {
-        ret.idx -= remoteOp.len;
+      if (remoteOp.idx < ret.idx) {
+        if (remoteOp.idx + remoteOp.len <= ret.idx) {
+          ret.idx -= remoteOp.len;
+        } else {
+          ret.idx = remoteOp.idx;
+        }
+        return ret;
       }
-      return ret;
     } else if (
       localOp.op === "stringremove" &&
       remoteOp.op === "stringremove"
