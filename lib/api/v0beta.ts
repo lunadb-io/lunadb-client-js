@@ -56,7 +56,7 @@ export async function v0betaSyncDocument(
   key: string,
   baseTimestamp?: string,
   delta?: Delta,
-  excludeRebased?: boolean,
+  remap?: boolean,
   sessionId?: string,
   sessionState?: string,
   sessionMetadata?: any,
@@ -77,7 +77,7 @@ export async function v0betaSyncDocument(
     fetch_all_presence_data: fetchAllPresenceData,
     exclude_presence: fetchNoPresenceData,
     changes: delta,
-    exclude_rebased: excludeRebased,
+    remap,
   };
   if (sessionId) {
     body.presence = {
